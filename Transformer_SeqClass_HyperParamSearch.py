@@ -165,7 +165,7 @@ path_dataset_local = os.path.join(path_cwd, "datasets" , _dataset_name_local)
 name of file with ModelConfig object
 path to folder with modelconfig
 """
-file_modelconfig = "ModelConfig_" + _base_model + "_" + _dataset_name + "_" + timestamp + ".pkl"
+file_modelconfig = "ModelConfig_" + _base_model + "_" + _dataset_name_local + "_" + timestamp + ".pkl"
 path_file_modelconfig = os.path.join(path_cwd, "modelconfigs", file_modelconfig)
 
 """
