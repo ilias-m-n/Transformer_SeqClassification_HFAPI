@@ -3,7 +3,7 @@
 
 # # Package Imports
 
-# In[2]:
+# In[3]:
 
 
 import numpy as np
@@ -53,7 +53,7 @@ get_ipython().run_line_magic('autoreload', '2')
 # - number of trials
 # 
 
-# In[8]:
+# In[18]:
 
 
 """
@@ -79,11 +79,21 @@ path_cwd = os.getcwd()
 
 
 """
-Base BERT model to be used during finetuning.
-This has to be picked from the pre-trained models on HuggingFace
-in order to be compatible with the Trainer API
+XLM-RoBERTa (base-sized model)
+-paper: https://arxiv.org/abs/1911.02116
+-git: https://github.com/facebookresearch/fairseq/tree/main/examples/xlmr
+-HF: https://huggingface.co/FacebookAI/xlm-roberta-base
+-name: "xlm-roberta-base"
+
+BERT multilingual base model (cased)
+- only original BERT paper found ...
+- no repo found
+-HF: https://huggingface.co/bert-base-multilingual-cased
+-name: bert-base-multilingual-cased
+
+
 """
-_base_model = "camembert-base"
+_base_model = "xlm-roberta_base"
 # for saving name in model config we need to make sure that there is no '/' in _base_model
 _base_model_altered = re.sub(r'/', '___', _base_model)
 
@@ -156,12 +166,12 @@ _from_hub = True
 """
 name of dataset on Hf-Hub
 """
-_dataset_name_hub = "HalaJada/FinStmts_ConsUncons_French_SeqClass"
+_dataset_name_hub = ["HalaJada/FinStmts_ConsUncons_French_SeqClass","HalaJada/FinStmts_ConsUncons_German_SeqClass"]
 
 """
 name of dataset to name model_config
 """
-_dataset_name = "French_ConsUncons" 
+_dataset_name = "FrenchGerman_ConsUncons" 
 
 """
 name of dataset to load and path to folder with local datasets
@@ -192,7 +202,7 @@ _save_strategy = "no"
 # 
 # Either load from a local directory or from the HuggingFace Hub
 
-# In[9]:
+# In[15]:
 
 
 raw_datasets = util.load_data(_from_hub, _dataset_name_hub, path_dataset_local)
@@ -200,7 +210,7 @@ raw_datasets = util.load_data(_from_hub, _dataset_name_hub, path_dataset_local)
 
 # # Determine number of labels/classes
 
-# In[5]:
+# In[9]:
 
 
 num_labels = util.get_no_labels(raw_datasets)

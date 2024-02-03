@@ -98,11 +98,13 @@ This has to be picked from the pre-trained models on HuggingFace
 in order to be compatible with the Trainer API
 """
 base_model = model_config.base_model
+# for saving name in model config we need to make sure that there is no '/' in _base_model
+base_model_altered = re.sub(r'/', '___', base_model)
 
 """
 Directory Paths:
 """
-path_final_training =  os.path.join(path_cwd , "training_data" , base_model, "final_training" + "_" + timestamp)
+path_final_training =  os.path.join(path_cwd , "training_data" , base_model_altered, "final_training" + "_" + timestamp)
 model_config.path_final_training = path_final_training
 
 """
@@ -167,7 +169,7 @@ path_dataset_local = model_config.path_dataset_local
 """
 path to folder with trained model
 """
-path_trained_model = os.path.join(path_cwd, "trained_models", base_model + "_" + timestamp)
+path_trained_model = os.path.join(path_cwd, "trained_models", base_model_altered + "_" + timestamp)
 model_config.path_trained_model = path_trained_model
 
 
@@ -350,7 +352,7 @@ trainer.train()
 # In[ ]:
 
 
-trainer.predict(tokenized_datasets["test"])
+predictions = trainer.predict(tokenized_datasets["test"])
 
 
 # # Example Confusion Matrix

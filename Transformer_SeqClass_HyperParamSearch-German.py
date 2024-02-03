@@ -79,11 +79,19 @@ path_cwd = os.getcwd()
 
 
 """
-Base BERT model to be used during finetuning.
-This has to be picked from the pre-trained models on HuggingFace
-in order to be compatible with the Trainer API
+German BERT by deepset
+-https://www.deepset.ai/german-bert
+- no paper found
+-HF: https://huggingface.co/bert-base-german-cased
+-name: bert-base-german-cased
+
+German BERT by dmbdz
+- git: https://github.com/dbmdz/berts
+- no paper found
+-HF: https://huggingface.co/dbmdz/bert-base-german-uncased
+-name: bert-base-german-dbmdz-cased , bert-base-german-dbmdz-uncased
 """
-_base_model = "camembert-base"
+_base_model = "bert-base-german-cased"
 # for saving name in model config we need to make sure that there is no '/' in _base_model
 _base_model_altered = re.sub(r'/', '___', _base_model)
 
@@ -137,7 +145,7 @@ _metric_best_model = "eval_matthews_correlation"
 """
 Number of trials to run during hyperparameter search.
 """
-_no_trials = 4
+_no_trials = 2
 
 """
 Employ freezing of layers, options:
@@ -156,12 +164,12 @@ _from_hub = True
 """
 name of dataset on Hf-Hub
 """
-_dataset_name_hub = "HalaJada/FinStmts_ConsUncons_French_SeqClass"
+_dataset_name_hub = "HalaJada/FinStmts_ConsUncons_German_SeqClass"
 
 """
 name of dataset to name model_config
 """
-_dataset_name = "French_ConsUncons" 
+_dataset_name = "German_ConsUncons" 
 
 """
 name of dataset to load and path to folder with local datasets

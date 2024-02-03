@@ -79,11 +79,20 @@ path_cwd = os.getcwd()
 
 
 """
-Base BERT model to be used during finetuning.
-This has to be picked from the pre-trained models on HuggingFace
-in order to be compatible with the Trainer API
+CamemBERT
+-original code: https://camembert-model.fr
+-https://arxiv.org/abs/1911.03894
+-HF: https://huggingface.co/almanach/camembert-base
+-name: camembert-base
+
+FlauBERT
+-original code: https://github.com/getalp/Flaubert
+-https://arxiv.org/abs/1912.05372
+-HF: https://huggingface.co/flaubert/flaubert_base_uncased
+-name: flaubert/flaubert_base_cased , flaubert/flaubert_base_uncased
+-note: need to install sacremoses
 """
-_base_model = "camembert-base"
+_base_model = "flaubert/flaubert_base_cased"
 # for saving name in model config we need to make sure that there is no '/' in _base_model
 _base_model_altered = re.sub(r'/', '___', _base_model)
 
@@ -137,7 +146,7 @@ _metric_best_model = "eval_matthews_correlation"
 """
 Number of trials to run during hyperparameter search.
 """
-_no_trials = 4
+_no_trials = 2
 
 """
 Employ freezing of layers, options:
