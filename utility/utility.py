@@ -94,9 +94,9 @@ def process_log_history(log_hist, no_epoch):
 
     # remove duplicate columns
     log = pd.concat([train_logs, eval_logs], axis=1)
-    log = log.loc[:, ~df.columns.duplicated(keep='last')]
+    log = log.loc[:, ~log.columns.duplicated(keep='last')]
 
-    return 
+    return log
 
 
 
