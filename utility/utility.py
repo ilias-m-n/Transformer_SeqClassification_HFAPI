@@ -1,6 +1,8 @@
 from collections import Counter
 from datasets import Dataset, DatasetDict, load_dataset, load_from_disk, concatenate_datasets
+from transformers import Trainer
 import pandas as pd
+import numpy as np
 
 def det_class_weights(datasets, subset = "train", label = "label"):
     no_labels = Counter(datasets[subset][label])
@@ -57,4 +59,53 @@ def prep_datasets_final_train(raw_datasets, train = "train", val = "validation")
     del raw_datasets["train"]
     del raw_datasets["validation"]
     return raw_datasets
+
+def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col):
+
+    res_df = data.copy()
+
+    res_df["agg_logits"] = list(pred.predictions)
+    res_df["mv_pred_label"] = np.argmax(pred.predictions, axis=1)
+
+    # remove segment specific columns
+    res_df.drop([seg_col, seg_id_col], axis=1, inplace=True)
+    
+    logits_agg = res_df.groupby([id_col])["agg_logits"].apply(lambda x: np.mean(np.vstack(x), axis=0))
+    pred_label_agg = res_df.groupby([id_col])["mv_pred_label"].mean()
+
+    # remove segment specific logits and predicted labels
+    res_df.drop(["agg_logits", "mv_pred_label"], axis=1, inplace=True)
+
+    res_df = pd.merge(res_df, logits_agg, on = [id_col])
+    res_df = pd.merge(res_df, pred_label_agg, on = [id_col])
+
+    res_df["mv_logits_label"] = res_df["agg_logits"].apply(np.argmax)
+
+    return res_df
+
+def process_log_history(log_hist, no_epoch):
+
+    train_logs = pd.DataFrame()
+    eval_logs = pd.DataFrame()
+
+    for i in range(no_epoch):
+        train_logs = pd.concat([train_logs, pd.DataFrame(log_hist[i*2], index=[i])])
+        eval_logs = pd.concat([eval_logs, pd.DataFrame(log_hist[1+i*2], index=[i])])
+
+    return pd.concat([train_logs, eval_logs], axis=1)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     

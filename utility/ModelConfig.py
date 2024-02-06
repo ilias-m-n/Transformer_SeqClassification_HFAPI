@@ -20,7 +20,8 @@ class ModelConfig:
                  no_trials, 
                  frozen,
                  path_initial_training,
-                 best_run):
+                 best_run,
+                 flag_mv = False):
 
         # set during initialization 
         self.timestamp_initial = timestamp
@@ -46,11 +47,21 @@ class ModelConfig:
         self.best_run = best_run
         self.path_initial_training = path_initial_training
 
+        self.flag_mv = flag_mv
+
         # set during final training after hyperparameter search
         self.timestamp_final = None
         self.path_final_training = None
         self.path_trained_model = None
-        
+
+        # set during performance evaluation
+        self.training_log_df = None
+        self.predictions = None
+        self.evaluation_results = None
+        self.confusion_matrix = None
+        # majority voting
+        self.evaluation_results_mv = None
+        self.confusion_matrix_mv = None
 
 
     def __str__(self):
