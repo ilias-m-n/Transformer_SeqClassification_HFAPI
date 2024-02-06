@@ -40,10 +40,6 @@ import utility.ModelConfig as mc
 # turn off warnings
 #logging.set_verbosity_error()
 
-# resets import once changes have been applied
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
-
 
 # # Meta Variables
 # - base model
@@ -85,12 +81,12 @@ in order to be compatible with the Trainer API
 """
 _base_model = "camembert-base"
 # for saving name in model config we need to make sure that there is no '/' in _base_model
-_base_model_altered = re.sub(r'/', '___', _base_model)
+base_model_altered = re.sub(r'/', '___', _base_model)
 
 """
 Directory Paths:
 """
-path_initial_training =  os.path.join(path_cwd , "training_data" , _base_model_altered, "initial_training" + "_" + timestamp)
+path_initial_training =  os.path.join("training_data" , base_model_altered, "initial_training" + "_" + timestamp)
 
 """
 Three custom loss functions have been implemented:
@@ -167,19 +163,24 @@ _dataset_name = "French_ConsUncons"
 name of dataset to load and path to folder with local datasets
 """
 _dataset_name_local = ""
-path_dataset_local = os.path.join(path_cwd, "datasets" , _dataset_name_local)
+path_dataset_local = os.path.join("datasets" , _dataset_name_local)
 
 """
 name of file with ModelConfig object
 path to folder with modelconfig
 """
-file_modelconfig = "ModelConfig_" + _base_model_altered + "_" + _dataset_name + "_" + timestamp + ".pkl"
-path_file_modelconfig = os.path.join(path_cwd, "modelconfigs", file_modelconfig)
+file_modelconfig = "ModelConfig_" + base_model_altered + "_" + _dataset_name + "_" + timestamp + ".pkl"
+path_file_modelconfig = os.path.join("modelconfigs", file_modelconfig)
 
 """
 save strategy during training
 """
 _save_strategy = "no"
+
+"""
+flag majority voting, multi-segment approach
+"""
+_flag_mv = False
 
 
 # # Setup
@@ -195,7 +196,7 @@ _save_strategy = "no"
 # In[9]:
 
 
-raw_datasets = util.load_data(_from_hub, _dataset_name_hub, path_dataset_local)
+raw_datasets = util.load_data(_from_hub, _dataset_name_hub, os.path.join(path_cwd, path_dataset_local))
 
 
 # # Determine number of labels/classes
@@ -260,7 +261,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 Create instance of class TrainingArguments. Adjust to desired behaviour.
 """
 training_args = TrainingArguments(
-    output_dir = path_initial_training,
+    output_dir = os.path.join(path_cwd, path_initial_training),
     save_strategy = _save_strategy,
     evaluation_strategy = "epoch",
     logging_strategy = "epoch",
@@ -474,7 +475,8 @@ model_config = mc.ModelConfig(timestamp = timestamp,
                               no_trials = _no_trials,  
                               frozen = _frozen,  
                               path_initial_training = path_initial_training,
-                              best_run = best_run)
+                              best_run = best_run,
+                              flag_mv = _flag_mv)
 
 
 # # Save ModelConfig
@@ -482,6 +484,6 @@ model_config = mc.ModelConfig(timestamp = timestamp,
 # In[75]:
 
 
-with open(path_file_modelconfig, 'wb') as f:
+with open(os.path.join(path_cwd, path_file_modelconfig), 'wb') as f:
     pickle.dump(model_config, f)
 

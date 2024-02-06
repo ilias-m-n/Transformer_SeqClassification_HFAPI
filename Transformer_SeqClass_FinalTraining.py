@@ -3,11 +3,13 @@
 
 # # Package Imports
 
-# In[1]:
+# In[13]:
 
 
 import numpy as np
+import pandas as pd
 import os
+import re
 
 
 from datasets import load_from_disk, load_metric, concatenate_datasets, DatasetDict, load_dataset
@@ -21,23 +23,21 @@ from transformers import (
      logging,
      AdamW,
      get_scheduler,
-
+     #TrainerCallback,
 )
 import torch
 from ray import tune, train
 import pickle
 from datetime import datetime
+#from copy import deepcopy
 from sklearn.metrics import confusion_matrix
 import utility.utility as util
 import utility.CustomTrainer as ct
 import utility.ModelConfig as mc
+#import utility.PerEpochEvalCallback as evalcb
 
 # turn off warnings
 #logging.set_verbosity_error()
-
-# resets import once changes have been applied
-get_ipython().run_line_magic('load_ext', 'autoreload')
-get_ipython().run_line_magic('autoreload', '2')
 
 
 # # Load Config File
@@ -58,14 +58,14 @@ _name_config_file = "ModelConfig_camembert-base_French_ConsUncons_31_01_24_00_42
 """
 path to file with modelconfig
 """
-path_file_modelconfig = os.path.join(path_cwd, "modelconfigs", _name_config_file)
+path_file_modelconfig = os.path.join("modelconfigs", _name_config_file)
 
 
 # In[3]:
 
 
 model_config = None
-with open(path_file_modelconfig, "rb") as f:
+with open(os.path.join(path_cwd, path_file_modelconfig), "rb") as f:
     model_config = pickle.load(f)
 
 
@@ -104,7 +104,7 @@ base_model_altered = re.sub(r'/', '___', base_model)
 """
 Directory Paths:
 """
-path_final_training =  os.path.join(path_cwd , "training_data" , base_model_altered, "final_training" + "_" + timestamp)
+path_final_training =  os.path.join("training_data" , base_model_altered, "final_training" + "_" + timestamp)
 model_config.path_final_training = path_final_training
 
 """
@@ -169,7 +169,7 @@ path_dataset_local = model_config.path_dataset_local
 """
 path to folder with trained model
 """
-path_trained_model = os.path.join(path_cwd, "trained_models", base_model_altered + "_" + timestamp)
+path_trained_model = os.path.join("trained_models", base_model_altered + "_" + timestamp)
 model_config.path_trained_model = path_trained_model
 
 
@@ -185,7 +185,7 @@ model_config.path_trained_model = path_trained_model
 # In[6]:
 
 
-raw_datasets = util.load_data(from_hub, dataset_name_hub, path_dataset_local)
+raw_datasets = util.load_data(from_hub, dataset_name_hub, os.path.join(path_cwd, path_dataset_local))
 
 
 # In[9]:
@@ -241,7 +241,7 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 Create instance of class TrainingArguments. Adjust to desired behaviour.
 """
 training_args = TrainingArguments(
-    output_dir = path_final_training,
+    output_dir = os.path.join(path_cwd, path_final_training),
     save_strategy = "epoch",
     evaluation_strategy = "epoch",
     logging_strategy = "epoch",
@@ -294,7 +294,7 @@ def compute_metrics(eval_preds):
 
 # # Initialize CustomTrainer
 
-# In[ ]:
+# In[11]:
 
 
 trainer = ct.CustomTrainer(
@@ -347,21 +347,25 @@ Pass instances to Trainer
 trainer.train()
 
 
-# # Measure Performance on Test-Set
+# # DataFrame with Training Metrics per Epoch
+
+# In[ ]:
+
+
+log_df = util.process_log_history(trainer.state.log_history, trainer.args.num_train_epochs)
+model_config.training_log_df = log_df
+
+
+# # Model predictions on test data
 
 # In[ ]:
 
 
 predictions = trainer.predict(tokenized_datasets["test"])
+model_config.predictions = predictions
 
 
-# # Example Confusion Matrix
-
-# In[ ]:
-
-
-pred_labels = np.argmax(predictions.predictions, axis=1)
-
+# # Performance on Test-Set and Confusion Matrix
 
 # In[ ]:
 
@@ -372,7 +376,22 @@ true_labels = tokenized_datasets["test"]["label"]
 # In[ ]:
 
 
-conf_mat = confusion_matrix(true_labels, pred_labels)
+predicted_labels = np.argmax(predictions.predictions, axis=1)
+
+
+# In[ ]:
+
+
+results = clf_metrics.compute(true_labels, predicted_labels)
+model_config.evaluation_results = results
+results
+
+
+# In[ ]:
+
+
+conf_mat = confusion_matrix(true_labels, predicted_labels)
+model_config.confusion_matrix = conf_mat
 conf_mat
 
 
@@ -382,12 +401,42 @@ conf_mat
 tn, fp, fn, tp = conf_mat.ravel()
 
 
+# # Majority Voting (if applicable)
+
+# In[ ]:
+
+
+results_mv = None
+conf_mat_mv = None
+if model_config.flag_mv:
+    test_df = raw_datasets["test"].to_pandas()
+    performance_mv = util.simple_majority_voting(test_df, predictions, "original_id", "text", "id")
+    true_labels_mv = performance_mv["label"]
+    predicted_labels_mv = performance_mv["mv_logits_label"]
+    results_mv = clf_metrics.compute(true_labels_mv, predicted_labels_mv)
+    conf_mat_mv = confusion_matrix(true_labels_mv, predicted_labels_mv)
+model_config.evaluation_results_mv = results_mv
+model_config.confusion_matrix_mv = conf_mat_mv
+
+
+# In[ ]:
+
+
+results_mv
+
+
+# In[ ]:
+
+
+conf_mat_mv
+
+
 # # Save Model
 
 # In[ ]:
 
 
-trainer.save_model(path_trained_model)
+trainer.save_model(os.path.join(path_cwd, path_trained_model))
 
 
 # # Save Model Config
@@ -395,6 +444,6 @@ trainer.save_model(path_trained_model)
 # In[ ]:
 
 
-with open(path_file_modelconfig, 'wb') as f:
+with open(os.path.join(path_cwd, path_file_modelconfig), 'wb') as f:
     pickle.dump(model_config, f)
 
