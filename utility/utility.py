@@ -92,7 +92,11 @@ def process_log_history(log_hist, no_epoch):
         train_logs = pd.concat([train_logs, pd.DataFrame(log_hist[i*2], index=[i])])
         eval_logs = pd.concat([eval_logs, pd.DataFrame(log_hist[1+i*2], index=[i])])
 
-    return pd.concat([train_logs, eval_logs], axis=1)
+    # remove duplicate columns
+    log = pd.concat([train_logs, eval_logs], axis=1)
+    log = log.loc[:, ~df.columns.duplicated(keep='last')]
+
+    return 
 
 
 

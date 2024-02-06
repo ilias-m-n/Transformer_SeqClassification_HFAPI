@@ -42,7 +42,7 @@ class ModelConfig:
         self.eval_metrics = eval_metrics 
         self.metric_best_model = metric_best_model
         
-        self.no_trails = no_trials
+        self.no_trials = no_trials
         self.frozen = frozen
         self.best_run = best_run
         self.path_initial_training = path_initial_training
