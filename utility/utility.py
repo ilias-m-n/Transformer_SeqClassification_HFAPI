@@ -76,8 +76,12 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col):
     # remove segment specific logits and predicted labels
     res_df.drop(["agg_logits", "mv_pred_label"], axis=1, inplace=True)
 
+    res_df.drop_duplicates(inplace=True)
+
     res_df = pd.merge(res_df, logits_agg, on = [id_col])
     res_df = pd.merge(res_df, pred_label_agg, on = [id_col])
+
+    
 
     res_df["mv_logits_label"] = res_df["agg_logits"].apply(np.argmax)
 
