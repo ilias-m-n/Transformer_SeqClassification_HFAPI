@@ -15,13 +15,17 @@ class ModelConfig:
                  weight_scheme, 
                  class_weights,
                  eval_metrics,  
-                 metric_best_model, 
+                 metric_best_model,
+                 metric_direction,
                  
                  no_trials, 
                  frozen,
                  path_initial_training,
                  best_run,
-                 flag_mv = False):
+                 hps_log_df,
+                 flag_mv = False,
+                 study_name = "",
+                 path_study_db = ""):
 
         # set during initialization 
         self.timestamp_initial = timestamp
@@ -41,14 +45,20 @@ class ModelConfig:
         self.class_weights = class_weights
         self.eval_metrics = eval_metrics 
         self.metric_best_model = metric_best_model
+        self.metric_direction = metric_direction
         
         self.no_trials = no_trials
         self.frozen = frozen
         self.best_run = best_run
         self.path_initial_training = path_initial_training
-
+        
         self.flag_mv = flag_mv
 
+        # hyperparameter search
+        self.hps_log_df = hps_log_df
+        self.study_name = study_name
+        self.path_study_db = path_study_db
+        
         # set during final training after hyperparameter search
         self.timestamp_final = None
         self.path_final_training = None

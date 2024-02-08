@@ -3,6 +3,7 @@ from datasets import Dataset, DatasetDict, load_dataset, load_from_disk, concate
 from transformers import Trainer
 import pandas as pd
 import numpy as np
+import json
 
 def det_class_weights(datasets, subset = "train", label = "label"):
     no_labels = Counter(datasets[subset][label])
@@ -51,8 +52,6 @@ def merge_datasetdicts(list_dsd):
 
     return DatasetDict(datasets)
 
-
-
 def prep_datasets_final_train(raw_datasets, train = "train", val = "validation"):
     train_val = concatenate_datasets([raw_datasets[train], raw_datasets[val]])
     raw_datasets["train_val"] = train_val
@@ -60,7 +59,7 @@ def prep_datasets_final_train(raw_datasets, train = "train", val = "validation")
     del raw_datasets["validation"]
     return raw_datasets
 
-def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col):
+def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
 
     res_df = data.copy()
 
@@ -74,7 +73,7 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col):
     pred_label_agg = res_df.groupby([id_col])["mv_pred_label"].mean()
 
     # remove segment specific logits and predicted labels
-    res_df.drop(["agg_logits", "mv_pred_label"], axis=1, inplace=True)
+    res_df.drop([col for col in res_df.columns if col not in [id_col, "label"]], axis=1, inplace=True)
 
     res_df.drop_duplicates(inplace=True)
 
@@ -87,14 +86,14 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col):
 
     return res_df
 
-def process_log_history(log_hist, no_epoch):
+def process_log_history(log_hist, num_epoch):
 
     train_logs = pd.DataFrame()
     eval_logs = pd.DataFrame()
 
-    for i in range(no_epoch):
-        train_logs = pd.concat([train_logs, pd.DataFrame(log_hist[i*2], index=[i])])
-        eval_logs = pd.concat([eval_logs, pd.DataFrame(log_hist[1+i*2], index=[i])])
+    for i in range(num_epoch):
+        train_logs = pd.concat([train_logs, pd.DataFrame(log_hist[i*2], index=[i+1])])
+        eval_logs = pd.concat([eval_logs, pd.DataFrame(log_hist[1+i*2], index=[i+1])])
 
     # remove duplicate columns
     log = pd.concat([train_logs, eval_logs], axis=1)
@@ -102,17 +101,48 @@ def process_log_history(log_hist, no_epoch):
 
     return log
 
+def process_hps_log_history(hps_log_hist):
 
+    res = pd.DataFrame()
+    trial_no = 0
+    
+    for trial in hps_log_hist:
+        num_epoch = int(trial[-1]["epoch"])
+        int_hps_log = process_log_history(trial, num_epoch)
+        int_hps_log["trial_no"] = trial_no
+        trial_no += 1
+        res = pd.concat([res, int_hps_log])
 
+    res.reset_index(drop=True, inplace=True)
+    return res
 
+def merge_hps_log_histories(prev, new):
 
+    tmp_prev = prev.copy()
+    tmp_new = new.copy()
+    prev_no_trials = tmp_prev["trial_no"].values[-1]
+    tmp_new["trial_no"] = tmp_new["trial_no"] + prev_no_trials
+    res = pd.concat([tmp_prev, tmp_new])
+    res.reset_index(drop=True, inplace=True)
 
+    return res
 
+def process_study_db_trial_params(tp):
 
+    int_dict = {}
+    
+    for ele in tp:
+        trial_no = ele[1]
+        param_n = ele[2]
+        param_v = ele[3]
+        j = json.loads(ele[4])
+        if j["name"] == "CategoricalDistribution":
+            param_v = j["attributes"]["choices"][int(param_v)]
+        int_list = int_dict.get(param_n, [])
+        int_list.append(param_v)
+        int_dict[param_n] = int_list       
 
-
-
-
+    return pd.DataFrame(int_dict)
 
 
 
