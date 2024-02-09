@@ -73,7 +73,7 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
     pred_label_agg = res_df.groupby([id_col])["mv_pred_label"].mean()
 
     # remove segment specific logits and predicted labels
-    res_df.drop([col for col in res_df.columns if col not in [id_col, "label"]], axis=1, inplace=True)
+    res_df.drop([col for col in res_df.columns if col not in [id_col, label_col]], axis=1, inplace=True)
 
     res_df.drop_duplicates(inplace=True)
 

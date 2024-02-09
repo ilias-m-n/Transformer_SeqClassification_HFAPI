@@ -2,7 +2,8 @@ class ModelConfig:
 
     def __init__(self, 
                  timestamp, 
-                 base_model, 
+                 base_model,
+                 reset_model_head,
                  task, 
                  loss_fct, 
 
@@ -30,6 +31,7 @@ class ModelConfig:
         # set during initialization 
         self.timestamp_initial = timestamp
         self.base_model = base_model
+        self.reset_model_head = reset_model_head
         self.task = task
         self.loss_fct = loss_fct
 
