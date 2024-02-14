@@ -5,7 +5,20 @@ import pandas as pd
 import numpy as np
 import json
 
+
 def det_class_weights(datasets, subset = "train", label = "label"):
+    """
+    Determines the ratios of each class present in a Dataset.
+
+    Args:
+        datasets (DatasetDict): DatasetDict for which to determine class weights.
+        subset (String): Name of Dataset in DatasetDict from which to take the 
+                         class ratios to determine class weights.
+        label (String): Column name of Dataset object that contains the class labels.
+
+    Returns:
+        Dictionary containing the fraction of each class in percent.
+    """
     no_labels = Counter(datasets[subset][label])
     overall_no_samples = 0
     for l in no_labels:
@@ -14,15 +27,53 @@ def det_class_weights(datasets, subset = "train", label = "label"):
     return weights
 
 def get_reverse_prop_class_weights(datasets, subset = "train", label = "label", label_order = [0,1]):
+    """
+    Determines the inverse class weights to run with weighted cost functions.
+
+    Args:
+        datasets (DatasetDict): DatasetDict for which to determine class weights.
+        subset (String): Name of Dataset in DatasetDict from which to take the 
+                         class ratios to determine class weights.
+        label (String): Column name of Dataset object that contains the class labels.
+        label_order (List): List contains the order of labels. Needed to order the weights.
+
+    Returns:
+        Dictionary containing the inverse fractions of each class.
+    """
     weights = det_class_weights(datasets, subset, label)
     rev_prop_weights = [1/weights[l] for l in label_order]
     return rev_prop_weights
 
 def get_no_labels(datasets, subset = "train", label = "label"):
+    """
+    Determines the unique number of labels for a DatasetDict.
+
+    Args:
+        datasets (DatasetDict): DatasetDict for which to determine class weights.
+        subset (String): Name of Dataset in DatasetDict from which to take determine
+                         the unique class labels.
+        label (String): Column name of Dataset object that contains the class labels.
+
+    Returns:
+        Integer indicating the number of unique labels.
+    """
     labels = set(datasets[subset][label])
     return len(labels)
 
 def load_data(from_hub = True, dataset_name_hub = "", path_dataset = ""):
+    """
+    Loads a DatasetDict from either a local directory or the HuggingFace Hub.
+
+    Args:
+        from_hub (Boolean): Determines whether to load dataset from Hub or a local directory.
+        dataset_name_hub (String/List(String)): Name of Dataset to be loaded from Hub.
+                                        If String: Corresponding dataset will be loaded.
+                                        If List: Corresponding datasets will be loaded and merged.
+        path_dataset (string): Filepath to local dataset.
+
+    Returns:
+        DatasetDict
+    """
     if from_hub:
         if isinstance(dataset_name_hub, list):
             mult_datasets = []
@@ -39,7 +90,15 @@ def load_data(from_hub = True, dataset_name_hub = "", path_dataset = ""):
         return load_from_disk(path_dataset)
 
 def merge_datasetdicts(list_dsd):
+    """
+    Merges DatasetDicts along their splits.
 
+    Args:
+        list_dsd (List(DatasetDicts)): List containing DatasetDict objects.
+
+    Returns:
+        Merged DatasetDict.
+    """
     datasets = {}
 
     for split in list_dsd[0]:
@@ -53,6 +112,17 @@ def merge_datasetdicts(list_dsd):
     return DatasetDict(datasets)
 
 def prep_datasets_final_train(raw_datasets, train = "train", val = "validation"):
+    """
+    Merges training and validation datasets for final training after validation.
+
+    Args:
+        raw_datasets (DatasetDict): DatasetDict containing the individual dataset splits.
+        train (String): Name of Dataset in DatasetDict containing the training dataset.
+        val (String): Name of Dataset in DatasetDict containing the validation dataset.
+
+    Returns:
+        DatasetDict where the training and validation datasets have been merged.
+    """
     train_val = concatenate_datasets([raw_datasets[train], raw_datasets[val]])
     raw_datasets["train_val"] = train_val
     del raw_datasets["train"]
@@ -60,7 +130,24 @@ def prep_datasets_final_train(raw_datasets, train = "train", val = "validation")
     return raw_datasets
 
 def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
+    """
+    Aggregates prediction over individual segements when majority voting scheme was employed.
 
+    Args:
+        data (pd.DataFrame): DataFrame containing the original dataset.
+        pred (String): Named tuple with following keys: 
+                            predictions (np.ndarray): raw logits
+                            label_ids (np.ndarray): labels (optional - only if dataset contained labels)
+                            metrics (Dict[str, float]): dictionary of metrics (optional - only if dataset contained labels)
+        id_col (String): Column name of ID column over which to aggregate individual logits before determining prediction label.
+        seg_col (String): Column name of segment text column.
+        seg_id_col (String): Column name of segement ID column.
+        label_col (String): Column name of label column.
+
+    Returns:
+        Aggregated dataframe data containing the prediction labels for each ID in id_col.
+        
+    """
     res_df = data.copy()
 
     res_df["agg_logits"] = list(pred.predictions)
@@ -87,6 +174,16 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
     return res_df
 
 def process_log_history(log_hist, num_epoch):
+    """
+    Processes Trainer.log_history info into a dataframe after running Trainer.train()
+
+    Args:
+        log_hist (List): List containing the evaluation metrics for each epoch trained
+        num_epoch (Integer): Number of training epochs performed 
+
+    Returns:
+        DataFrame containing the log information
+    """
 
     train_logs = pd.DataFrame()
     eval_logs = pd.DataFrame()
@@ -102,6 +199,15 @@ def process_log_history(log_hist, num_epoch):
     return log
 
 def process_hps_log_history(hps_log_hist):
+    """
+    Processes the individual log histories of each trial run performed during hyperparameter search
+
+    Args:
+        hps_log_hist (list): Contains the individual log histories of each trial
+
+    Returns:
+        DataFrame containing the log information for each run
+    """
 
     res = pd.DataFrame()
     trial_no = 0
@@ -117,7 +223,16 @@ def process_hps_log_history(hps_log_hist):
     return res
 
 def merge_hps_log_histories(prev, new):
+    """
+    Merges two log history dataframe when multiple hyperparameter searches have been performed
 
+    Args:
+        prev (list): Contains the processed log history dataframe from previous runs
+        new (list): Contains the processed log history dataframe from current runs
+
+    Returns:
+        DataFrame containing the log information for the combined runs
+    """
     tmp_prev = prev.copy()
     tmp_new = new.copy()
     prev_no_trials = tmp_prev["trial_no"].values[-1]
@@ -128,7 +243,18 @@ def merge_hps_log_histories(prev, new):
     return res
 
 def process_study_db_trial_params(tp):
+    """
+    Processes result from querying database (sqlite) object containing the hyperparameter choices for each trial run
+    performed during hyperparameter search.
 
+    SQL query performed: SELECT * FROM trial_params
+    
+    Args:
+        tp (list): List containing query results
+
+    Returns:
+        DataFrame containing the log information for the combined runs
+    """
     int_dict = {}
     
     for ele in tp:
@@ -143,7 +269,3 @@ def process_study_db_trial_params(tp):
         int_dict[param_n] = int_list       
 
     return pd.DataFrame(int_dict)
-
-
-
-    

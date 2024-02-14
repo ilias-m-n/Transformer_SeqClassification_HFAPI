@@ -2,15 +2,9 @@ import os
 import numpy as np
 import evaluate
 from transformers import (
-     #AutoTokenizer,
-     #DataCollatorWithPadding,
      TrainingArguments,
-     #AutoModelForSequenceClassification,
      Trainer,
      logging,
-     #AdamW,
-     #get_scheduler,
-
 )
 import torch
 from ray import tune, train
@@ -18,13 +12,17 @@ from ray import tune, train
 """
 CustomTrainer
 
-In order to use custom loss function we need to create a trainer that inherits from HuggingFace's Trainer class.
+In order to use custom loss function we need to create a subclass of Trainer that inherits from HuggingFace's Trainer class.
 
-Note: When using one of the soft cost functions (F1 or MCC) we observe slower convergence during training. This might require longer training times.
+Note: Soft MCC and F1 only work with a binary classification task, but can easily be amended to work with multi-class classification tasks.
 
-Note: This template in its current form only works with a binary classification task, but can easily be amended to work with multi-class classification tasks.
+Arguments (only those additonal to default Trainer):
 
+    type_loss (String): Name of loss function to be used during model training/optimization.
 
+    class_weights (List): Contain individual class weights to be used when employing weighted loss function schemes.
+
+    kwargs: Default Trainer attributes. For details see: https://huggingface.co/docs/transformers/main_classes/trainer
 """
 
 class CustomTrainer(Trainer):
@@ -38,7 +36,7 @@ class CustomTrainer(Trainer):
     super().__init__(**kwargs)
     # Assign ChildClass Attributes
     self.type_loss = type_loss
-    self.loss_fcts = {"wce": self.weighted_cross_entropy, "f1": self.macro_double_soft_f1, "mcc": self.mcc_exp, "ce":super().compute_loss}
+    self.loss_fcts = {"wce": self.weighted_cross_entropy, "f1": self.soft_f1, "mcc": self.soft_mcc, "ce":super().compute_loss}
     self.class_weights = class_weights
 
   def compute_loss(self, model, inputs, return_outputs=False):
@@ -48,10 +46,10 @@ class CustomTrainer(Trainer):
     """
     return self.loss_fcts[self.type_loss](model, inputs, return_outputs)
 
-  def macro_double_soft_f1(self, model, inputs, return_outputs=False):
+  def soft_f1(self, model, inputs, return_outputs=False):
 
       """
-      Compute the macro soft F1-score as a cost (average 1 - soft-F1 across
+      Compute soft F1-score as a cost function (1 - soft-F1 across
       all labels).
       Use probability values instead of binary predictions.
 
@@ -82,8 +80,8 @@ class CustomTrainer(Trainer):
 
   def weighted_cross_entropy(self, model, inputs, return_outputs=False):
     """
-    This method employs standard Cross-Entropy but puts different weights on the
-    classes.
+    This method employs standard Cross-Entropy but puts different weights on each
+    class.
     With this, should one class be of more importance we can overweigh its
     impact on the loss, thereby indirectly penalizing the other class.
     """
@@ -96,7 +94,7 @@ class CustomTrainer(Trainer):
     loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1))
     return (loss, outputs) if return_outputs else loss
 
-  def mcc_exp(self, model, inputs, return_outputs=False):
+  def soft_mcc(self, model, inputs, return_outputs=False):
     """
     Computes a sort of soft MCC score, similiarly to the soft-F1, by using
     probability measures instead of binary predictions.

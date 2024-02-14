@@ -1,7 +1,17 @@
-from transformers import TrainerCallback#, TrainerState, Trainer
+from transformers import TrainerCallback
 import copy
 
 class CustomCallback(TrainerCallback):
+    """
+    CustomCallback
+
+    Helps us to track and gather log histories of individual trials during hyperparameter search.
+        
+        Arguments:
+
+            trainer (Trainer): Instance of class Trainer (CustomTrainer).
+
+    """
     def __init__(self, trainer):
         self._trainer = trainer
         self.all_log_history = []
