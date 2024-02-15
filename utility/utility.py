@@ -129,7 +129,7 @@ def prep_datasets_final_train(raw_datasets, train = "train", val = "validation")
     del raw_datasets["validation"]
     return raw_datasets
 
-def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
+def process_prediction_results(data, pred, id_col, seg_col, seg_id_col, label_col, flag_mv = False):
     """
     Aggregates prediction over individual segements when majority voting scheme was employed.
 
@@ -143,35 +143,63 @@ def simple_majority_voting(data, pred, id_col, seg_col, seg_id_col, label_col):
         seg_col (String): Column name of segment text column.
         seg_id_col (String): Column name of segement ID column.
         label_col (String): Column name of label column.
+        flag_mv (Boolean): Indicate whether to aggregate results of segements per id
+        
 
     Returns:
         Aggregated dataframe data containing the prediction labels for each ID in id_col.
         
     """
     res_df = data.copy()
+    res_mv_df = None
 
-    res_df["agg_logits"] = list(pred.predictions)
-    res_df["mv_pred_label"] = np.argmax(pred.predictions, axis=1)
+    res_df["pred_logits"] = list(pred.predictions)
+    res_df["pred_label"] = np.argmax(pred.predictions, axis=1)
+
+    if flag_mv:
+        res_mv_df = simple_majority_voting(res_df, id_col, seg_col, seg_id_col, label_col)
+
+    res_df.drop([seg_col], axis=1, inplace=True)
+        
+    return res_df, res_mv_df
+
+def simple_majority_voting(data, id_col, seg_col, seg_id_col, label_col):
+    """
+    Aggregates prediction over individual segements when majority voting scheme was employed.
+
+    Args:
+        data (pd.DataFrame): DataFrame containing the original dataset with unaggregated prediction labels and logits.
+        id_col (String): Column name of ID column over which to aggregate individual logits before determining prediction label.
+        seg_col (String): Column name of segment text column.
+        seg_id_col (String): Column name of segement ID column.
+        label_col (String): Column name of label column.
+
+    Returns:
+        Aggregated dataframe data containing the prediction labels for each ID in id_col.
+        
+    """
+    res_mv_df = data.copy()
 
     # remove segment specific columns
-    res_df.drop([seg_col, seg_id_col], axis=1, inplace=True)
-    
-    logits_agg = res_df.groupby([id_col])["agg_logits"].apply(lambda x: np.mean(np.vstack(x), axis=0))
-    pred_label_agg = res_df.groupby([id_col])["mv_pred_label"].mean()
-
+    res_mv_df.drop([seg_col, seg_id_col], axis=1, inplace=True)
+    # aggregate scores
+    logits_agg = res_mv_df.groupby([id_col])["pred_logits"].apply(lambda x: np.mean(np.vstack(x), axis=0))
+    pred_label_agg = res_mv_df.groupby([id_col])["pred_label"].mean()
+    # rename series names
+    logits_agg.rename("pred_mv_agg_logits", inplace = True)
+    pred_label_agg.rename("pred_mv_agg_label", inplace = True)
     # remove segment specific logits and predicted labels
-    res_df.drop([col for col in res_df.columns if col not in [id_col, label_col]], axis=1, inplace=True)
+    res_mv_df.drop([col for col in res_mv_df.columns if col not in [id_col, label_col]], axis=1, inplace=True)
+    # remove duplicate rows
+    res_mv_df.drop_duplicates(inplace=True)
+    # merge results back to original dataframe
+    res_mv_df = pd.merge(res_mv_df, logits_agg, on = [id_col])
+    res_mv_df = pd.merge(res_mv_df, pred_label_agg, on = [id_col])
 
-    res_df.drop_duplicates(inplace=True)
+    # determine label based on aggregated logits
+    res_mv_df["pred_mv_agg_logits_label"] = res_mv_df["pred_mv_agg_logits"].apply(np.argmax)
 
-    res_df = pd.merge(res_df, logits_agg, on = [id_col])
-    res_df = pd.merge(res_df, pred_label_agg, on = [id_col])
-
-    
-
-    res_df["mv_logits_label"] = res_df["agg_logits"].apply(np.argmax)
-
-    return res_df
+    return res_mv_df
 
 def process_log_history(log_hist, num_epoch):
     """

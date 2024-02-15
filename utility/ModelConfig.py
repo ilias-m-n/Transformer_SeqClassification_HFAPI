@@ -61,9 +61,13 @@ class ModelConfig:
 
         training_log_df (DataFrame): Contains evaluation metrics for each epoch produced during final training.
 
+        predictions_df (DataFrame): Contains the true and predicted labels for each sample in the test dataset
+
         evaluation_results (Dictionary): Contains evaluation metrics produced by testing model performance on test dataset.
 
         confusion_matrix (ndarray): Contains confusion matrix.
+        
+        predictions_mv_df (DataFrame): Contains the true and predicted labels for each aggregated sample in the test dataset
 
         evaluation_results_mv (Dictionary): Contains evaluation metrics produced by testing model performance on test dataset and aggregating predictions
                                             for each document's segments.
@@ -96,9 +100,9 @@ class ModelConfig:
                  path_initial_training,
                  best_run,
                  hps_log_df,
-                 flag_mv = False,
-                 study_name = "",
-                 path_study_db = ""):
+                 flag_mv,
+                 study_name,
+                 path_study_db,):
 
         # set during initialization 
         self.timestamp_initial = timestamp
@@ -140,8 +144,10 @@ class ModelConfig:
 
         # set during performance evaluation
         self.training_log_df = None
+        self.predictions_df = None
         self.evaluation_results = None
         self.confusion_matrix = None
         # majority voting
+        self.predictions_mv_df = None
         self.evaluation_results_mv = None
         self.confusion_matrix_mv = None
