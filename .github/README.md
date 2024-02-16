@@ -12,10 +12,11 @@ An in-depth paragraph about your project and overview of use.
 
 * Describe any prerequisites, libraries, OS version, etc., needed before installing program
 
-### Installing (I)
+### Python Requirements: (I)
 
-* How/where to download your program
-* Any modifications needed to be made to files/folders
+* Within our repo we provide a requirements.txt file to easily setup a python virtual environment to run the project code.
+* Note, some packages have to be installed manually among them:
+* [pytorch](https://pytorch.org)
 
 ### Executing program (I)
 
@@ -30,6 +31,8 @@ code blocks for commands
 ### Datasets (H)
 
 Description of datasets used to train models. Their make up and locations/names of Hub.
+
+[HF-Hub](https://huggingface.co/datasets/Databasesprojec/FinStmts_ConsUncons_Reduced_UndersampleMajority_French_SeqClass)
 
 ### Origin of data (H)
 
