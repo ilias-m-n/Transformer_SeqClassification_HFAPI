@@ -1,8 +1,8 @@
-# Project Title
+# Project Title (H)
 
 Simple overview of use/purpose.
 
-## Description
+## Description (H)
 
 An in-depth paragraph about your project and overview of use.
 
@@ -36,11 +36,42 @@ The project repository is organized into distinct folders, each serving a specif
 
 ### Executing program (I)
 
-* How to run the individual code files
-* Step-by-step bullets
-```
-code blocks for commands
-```
+  To execute our project successfully, follow these steps:
+  
+  **1) Initial Hyperparameter Search (Transformer_SeqClass_HyperParamSearch.ipynb):**
+  
+  In this notebook, configure the settings based on the specific task at hand.
+  
+  - **Global Settings:**
+    - `path_cwd`: Absolute file path to the project folder. Set manually only if the code is not directly executed from the project's root folder; otherwise, the path is determined automatically.
+    - `_num_trials`: Indicate the number of trials to run during hyperparameter search.
+  
+  - **First run or continuation of hyperparameter search (HPS):**
+    - Set `_flag_first_run` to TRUE and ignore all other settings.
+  
+  - **Configure model behavior (first run):**
+    - Set variables to indicate what base_model to use, which loss function to optimize, which metric to optimize during hyperparameter search, and several more.
+  
+  - **Define hyperparameter search space:**
+    - Specify the hyperparameters for trials, including their ranges and types.
+  
+  After configuring the settings, execute the code. This produces several outcomes: training data and checkpoints for each trial run, the best hyperparameters discovered, and an instance of the ModelConfig.py class.
+  
+  **2) (Optional) Continuation of Hyperparameter Search (Transformer_SeqClass_HyperParamSearch.ipynb):**
+  
+  Following the initial hyperparameter search and the creation of a ModelConfig.py instance, subsequent runs are easily performed by setting `_flag_first_run` to False and providing the name of the ModelConfig.py instance, created during the initial run, to `_name_config_file`. Additionally, adjust `_num_trials` to the desired number of trials to perform.
+  
+  The remaining settings are extracted from the provided ModelConfig.py instance. After notebook execution, the ModelConfig.py instance is updated.
+  
+  **3) Final Training (Transformer_SeqClass_FinalTraining.ipynb):**
+  
+  The final training requires minimal configuration as most crucial variables are extracted from the ModelConfig.py instance.
+  
+  - Set `path_cwd` if the code is not directly executed from the project's root folder; otherwise, the path is determined automatically.
+  - Provide the name of the ModelConfig.py instance produced during the initial hyperparameter search.
+  - Execute the notebook.
+  
+  This step yields evaluation results on the test set, saves the trained model under `trained_models`, and updates the ModelConfig.py instance. Ensure that dependencies listed in `requirements.txt` are installed, and refer to the code documentation for detailed information on each variable. Note that all variables that have to be set manually, with exception of path_cwd, have an underscore prefix (_variable_name), while those set by the code have no underscore prefix (variable_name).
 
 ## Data
 
@@ -57,8 +88,6 @@ How was the data complied, extracted, cleaned, and any other steps applied.
 ### Dataset preparation (for model training) (H/I)
 
 Which part of the data are we using for training and why. (H)
-
-How did we prepare the data splits (I)
 
 ## Appendix (H,S)
 
