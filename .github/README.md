@@ -85,7 +85,7 @@ Description of datasets used to train models. Their make up and locations/names 
 
 How was the data complied, extracted, cleaned, and any other steps applied.
 
-### Dataset preparation (for model training) (H/I)
+### Dataset preparation (for model training) (H)
 
 Which part of the data are we using for training and why. (H)
 
