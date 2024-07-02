@@ -69,7 +69,9 @@ def load_data(from_hub = True, dataset_name_hub = "", path_dataset = ""):
         dataset_name_hub (String/List(String)): Name of Dataset to be loaded from Hub.
                                         If String: Corresponding dataset will be loaded.
                                         If List: Corresponding datasets will be loaded and merged.
-        path_dataset (string): Filepath to local dataset.
+        path_dataset (String/List(String)): Filepath to local dataset.
+                                        If String: Corresponding dataset will be loaded.
+                                        If List: Corresponding datasets will be loaded and merged.
 
     Returns:
         DatasetDict
@@ -87,7 +89,17 @@ def load_data(from_hub = True, dataset_name_hub = "", path_dataset = ""):
         else:
             return load_dataset(dataset_name_hub)
     else:
-        return load_from_disk(path_dataset)
+        if isinstance(path_dataset, list):
+            mult_datasets = []
+            #load individual datasets
+            for ds in path_dataset:
+                mult_datasets.append(load_from_disk(ds))
+            # concatenate datasets
+            if len(mult_datasets) == 1:
+                return mult_datasets[0]
+            return merge_datasetdicts(mult_datasets)
+        else:
+            return load_from_disk(path_dataset)
 
 def merge_datasetdicts(list_dsd):
     """

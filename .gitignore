@@ -4,3 +4,5 @@
 /training_data/*
 /modelconfigs/*
 /trained_models/*
+/.ipynb_checkpoints/
+/utility/.ipynb_checkpoints/
